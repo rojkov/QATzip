@@ -72,6 +72,8 @@ int initStream(QzSession_T *sess, QzStream_T *strm)
     }
 
     stream_buf->out_offset = 0;
+    stream_buf->in_offset = 0;
+    stream_buf->flush_more = 0;
     stream_buf->buf_len = qz_sess->sess_params.strm_buff_sz;
     stream_buf->in_buf = qzMalloc(stream_buf->buf_len, NODE_0, PINNED_MEM);
     stream_buf->out_buf = qzMalloc(stream_buf->buf_len, NODE_0, PINNED_MEM);
@@ -378,6 +380,12 @@ int qzDecompressStream(QzSession_T *sess, QzStream_T *strm, unsigned int last)
         produced += copied_output;
         if (0 == copied_output) {
             rc = QZ_OK;
+            if (strm->pending_in > 0) {
+                /* We need to handle all the input that has left pending in the input buffer next time we are called.
+                 * Otherwise we'd append additional bits to the pending data, violate the buffer's boundary and
+                 * corrupt the memory behind the boundary. */
+                stream_buf->flush_more = 1;
+            }
             QZ_DEBUG("No space for pending output...\n");
             goto done;
         }
@@ -386,7 +394,7 @@ int qzDecompressStream(QzSession_T *sess, QzStream_T *strm, unsigned int last)
 
     while (0 == strm->pending_out) {
 
-        if (1 == copy_more) {
+        if (1 == copy_more && stream_buf->flush_more != 1) {
             copied_input_last = copied_input;
             copied_input += copyStreamInput(strm, strm->in + consumed);
 
@@ -398,6 +406,14 @@ int qzDecompressStream(QzSession_T *sess, QzStream_T *strm, unsigned int last)
             } else {
                 copy_more = 0;
             }
+        }
+
+        if (stream_buf->flush_more == 1) {
+            /* We need to flush all the input that has left pending in the input buffer since the previous call to this function.
+             * Otherwise we'd append additional bits to the pending data, violate the buffer's boundary and
+             * corrupt the memory behind the boundary. */
+            stream_buf->flush_more = 0;
+            inbuf_offset = stream_buf->in_offset;
         }
 
         input_len = strm->pending_in;
@@ -418,6 +434,7 @@ int qzDecompressStream(QzSession_T *sess, QzStream_T *strm, unsigned int last)
         }
 
         inbuf_offset += input_len;
+        stream_buf->in_offset = inbuf_offset;
         consumed += input_len;
         strm->pending_in -= input_len;
         strm->pending_out = output_len;
