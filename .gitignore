@@ -1,0 +1,8 @@
+*.o
+*.swp
+Makefile
+*.so.*
+*.so
+*.a
+qzip
+qunzip
