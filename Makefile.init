@@ -48,8 +48,8 @@ EXTRA_CFLAGS = $(QAT_INCLUDE) \
                -I$(top_builddir)/include \
                -I$(top_builddir)/src
 
-default: $(QATZIP_LIB_STATIC) $(QATZIP_LIB_SHARED) qzip
-all: $(QATZIP_LIB_STATIC) $(QATZIP_LIB_SHARED) qzip test
+default: $(QATZIP_LIB_STATIC) $(QATZIP_LIB_SHARED) qzip qunzip
+all: $(QATZIP_LIB_STATIC) $(QATZIP_LIB_SHARED) qzip test qunzip
 qzip_obj_without_main: qzip_obj_without_main
 
 install: qzip $(QATZIP_LIB_SHARED)
@@ -84,6 +84,9 @@ $(QATZIP_LIB_SHARED):
 
 qzip: $(QATZIP_LIB_STATIC)
 	$(MAKE) -C $(QZIP_UTIL_D) $(QZIP_UTIL)
+
+qunzip: $(QATZIP_LIB_STATIC)
+	$(MAKE) -C $(QZIP_UTIL_D) qunzip
 
 qzip_obj_without_main: $(QATZIP_LIB_STATIC)
 	$(MAKE) -C $(QZIP_UTIL_D) $(QZIP_OBJ_UT)

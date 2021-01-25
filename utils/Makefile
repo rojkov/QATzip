@@ -34,7 +34,10 @@
 
 LIB_STATIC += $(QATZIP_LIB_D)/$(QATZIP_LIB_STATIC)
 
-all: qzip
+all: qzip qunzip
+
+qunzip: qunzip.o
+	$(CC) $^ -o $@ $(LDFLAGS) $(LIB_STATIC) $(LIBADD)
 
 qzip: qzip_main.o qzip.o qzip_7z.o
 	$(CC) $^ -o $@ $(LDFLAGS) $(LIB_STATIC) $(LIBADD)
